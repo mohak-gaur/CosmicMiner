@@ -20,6 +20,7 @@ def register_and_upgrade(user, parent_ref, headless=False):
         dash.setup_pin_and_onboarding()
         dash.checkbox()
         dash.close_popup()
+        dash.start_mining()
         new_ref = dash.extract_referral()
         dash.back_to_dashboard()
         plan_id = dash.upgrade_plan()

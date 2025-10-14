@@ -48,6 +48,15 @@ class DashboardPage:
             time.sleep(0.5)
         except Exception:
             pass
+
+    def start_mining(self):
+        try:
+            start_mining = self.wait.until(EC.element_to_be_clickable((By.ID, "startMiningBtn")))
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", start_mining)
+            start_mining.click()
+            time.sleep(3)
+        except Exception:
+            logging.info("Error while starting mining")
               
 
     def extract_referral(self):
