@@ -73,8 +73,8 @@ class DashboardPage:
             upgrade_nav.click()
 
         # choose a random plan id between 1 and 4
-            random_id = random.randint(1, 4)
-            random_package_locator = f"//button[contains(@onclick , 'plan_id={random_id}')]"
+            plan_id = random.randint(1, 4)
+            random_package_locator = f"//button[contains(@onclick , 'plan_id={plan_id}')]"
             upgrade_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, random_package_locator)))
             upgrade_button.click()
 
@@ -118,7 +118,7 @@ class DashboardPage:
         # wait a little for modal to close / success message
             time.sleep(2)
             logging.info("Plan upgrade flow completed (client-side) — awaiting admin confirmation.")
-            return True
+            return plan_id
         except Exception as e:
             logging.error(f"Error during perform_plan_upgrade: {e}", exc_info=True)
-            return False
+            # return False

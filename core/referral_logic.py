@@ -75,6 +75,7 @@ def calculate_metrics(referral_map, user_ref, visited=None):
 
     # Include own plan amount
     if user.get('PlanID'):
+        # plan_id = int(user['PlanID'])
         total_business += PLAN_AMOUNT_MAP.get(user['PlanID'], 0)
 
     # Recursively calculate for children

@@ -1,6 +1,7 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 import time
+import logging
 
 class AdminPage:
     def __init__(self, driver, wait, config):
@@ -17,5 +18,6 @@ class AdminPage:
         time.sleep(1)
         self.driver.find_element(By.XPATH, "(//button[@class='action-btn btn-edit'])[1]").click()
         self.driver.find_element(By.NAME, "status").click()
+        logging.info("Payment status has been updated to 'Completed'")
         self.driver.find_element(By.XPATH, "//option[@value='completed']").click()
         self.driver.find_element(By.NAME, "update_status").click()
