@@ -53,21 +53,47 @@ def determine_star_rank(user, direct_miners, referral_map):
                 return star_level
     return 2
 
-def calculate_metrics(referral_map, user_ref):
+def calculate_metrics(referral_map, user_ref, visited=None):
+    if visited is None:
+        visited = set()
+
+    # Prevent infinite recursion
+    if user_ref in visited:
+        return 0, 0
+    visited.add(user_ref)
+
     user = referral_map[user_ref]
-    direct_miners = [child for child in referral_map.values() if child['ParentReferral'] == user_ref]
+    # Get direct miners for this user
+    direct_miners = [
+        child for child in referral_map.values()
+        if child['ParentReferral'] == user_ref
+    ]
     user['DirectMiners'] = len(direct_miners)
+
     indirect_miners = 0
-    total_business = PLAN_AMOUNT_MAP.get(user['PlanID'], 0) if user['PlanID'] else 0
+    total_business = 0
+
+    # Include own plan amount
+    if user.get('PlanID'):
+        total_business += PLAN_AMOUNT_MAP.get(user['PlanID'], 0)
+
+    # Recursively calculate for children
     for child in direct_miners:
-        im, tb = calculate_metrics(referral_map, child['MyReferral'])
+        im, tb = calculate_metrics(referral_map, child['MyReferral'], visited)
         indirect_miners += 1 + im
         total_business += tb
+
     user['IndirectMiners'] = indirect_miners
     user['TotalBusiness'] = total_business
+
+    # Determine Rank (applies to all)
     user['Rank'] = determine_rank(user, direct_miners, referral_map)
+
+    # Determine Star (only for paid users)
     user['StarRank'] = determine_star_rank(user, direct_miners, referral_map)
+
     return indirect_miners, total_business
+
 
 def build_referral_map_from_results(results, start_referral):
     # results: list of tuples (user, parent, new_ref, level, plan_id)

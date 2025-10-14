@@ -1,9 +1,9 @@
 # Configuration file for CosmicMinerBot
-EXCEL_FILE = r'C:\CosmicMiner\users.xlsx'
+EXCEL_FILE = r'C:\CosmicMiner\users1.xlsx'
 EXCEL_SHEET = 'users'
 
 START_REFERRAL_CODE = 'QM1JEHOY'
-CHILDREN_PER_PARENT = 15
+CHILDREN_PER_PARENT = 3
 MAX_LEVELS = 5
 
 ADMIN_USERNAME = "Admin"

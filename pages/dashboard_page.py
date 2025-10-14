@@ -1,6 +1,6 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-import time, random, string
+import time, random, string, logging
 import config
 
 class DashboardPage:
@@ -48,10 +48,7 @@ class DashboardPage:
             time.sleep(0.5)
         except Exception:
             pass
-        # try:
-        #     popup_close = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@id='closePopup']")))
-        #     popup_close.click()
-        #     time.sleep(1)        
+              
 
     def extract_referral(self):
         try:
@@ -70,15 +67,58 @@ class DashboardPage:
             pass
 
     def upgrade_plan(self):
+        
         try:
-            self.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='upgrade_gpc.php']"))).click()
-            plan_id = random.randint(1,4)
-            btn = self.wait.until(EC.element_to_be_clickable((By.XPATH, f"//button[contains(@onclick,'plan_id={plan_id}')]")))
-            btn.click()
+            upgrade_nav = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='upgrade_gpc.php']")))
+            upgrade_nav.click()
+
+        # choose a random plan id between 1 and 4
+            random_id = random.randint(1, 4)
+            random_package_locator = f"//button[contains(@onclick , 'plan_id={random_id}')]"
+            upgrade_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, random_package_locator)))
+            upgrade_button.click()
+
+            time.sleep(1)  # allow modal/plan details to appear
+        # read plan amount text
+            plan_range = self.driver.find_element(By.XPATH, "//div[@class='plan-range']").text
+            logging.info(f"Selected plan range text: {plan_range}")
+
+            amount_lookup = {
+                '30.000 USDT': 80,
+                '101.000 USDT': 200,
+                '251.000 USDT': 800,
+                '1001.000 USDT': 4500
+            }
+            set_amount = ''
+            for key, val in amount_lookup.items():
+                if key in plan_range:
+                    set_amount = val
+                    break
+
+            if set_amount != '':
+                try:
+                    logging.info(f"Setting amount to {set_amount}")
+                    amt_input = self.wait.until(EC.presence_of_element_located((By.ID, "amount")))
+                    amt_input.clear()
+                    amt_input.send_keys(str(set_amount))
+                except Exception as e:
+                    logging.warning(f"Couldn't set the amount input: {e}")
+                # pass
+
+        # Click pay now
+            self.wait.until(EC.element_to_be_clickable((By.ID, "pay-now-btn"))).click()
             time.sleep(1)
-            txn = ''.join(random.choices(string.ascii_letters, k=8))
-            self.wait.until(EC.presence_of_element_located((By.ID, "modal-txn-hash"))).send_keys(txn)
+
+        # generate random txn hash and submit
+            txn_hash = ''.join(random.choices(string.ascii_letters, k=8))
+            logging.info(f"Submitting fake transaction hash: {txn_hash}")
+            self.wait.until(EC.presence_of_element_located((By.ID, "modal-txn-hash"))).send_keys(txn_hash)
             self.wait.until(EC.element_to_be_clickable((By.ID, "modal-submit"))).click()
-            return plan_id
-        except Exception:
-            return None
+
+        # wait a little for modal to close / success message
+            time.sleep(2)
+            logging.info("Plan upgrade flow completed (client-side) — awaiting admin confirmation.")
+            return True
+        except Exception as e:
+            logging.error(f"Error during perform_plan_upgrade: {e}", exc_info=True)
+            return False
