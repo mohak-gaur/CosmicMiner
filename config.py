@@ -6,12 +6,14 @@ START_REFERRAL_CODE = 'QM1JEHOY'
 CHILDREN_PER_PARENT = 1
 MAX_LEVELS = 10
 
-ADMIN_USERNAME = "Admin"
-ADMIN_PASSWORD = "123456"
-ADMIN_URL = "https://cosmicminer.in/admin/login.php"
+# ADMIN_USERNAME = "Admin"
+# ADMIN_PASSWORD = "123456"
+ADMIN_USERNAME = "cosmipower"
+ADMIN_PASSWORD = "bgHxQ4MkrziTpbq"
+ADMIN_URL = "https://cosmiminer.in/owebest/website/admin/login.php"
 
-REGISTER_URL = "https://www.cosmiminer.in/register.html"
-SITE_HOME_URL = "https://www.cosmiminer.in/"
+REGISTER_URL = "https://cosmiminer.in/owebest/website/register.html"
+SITE_HOME_URL = "https://cosmiminer.in/owebest/website/index.html"
 
 PLAN_AMOUNT_MAP = {
     1: 80,

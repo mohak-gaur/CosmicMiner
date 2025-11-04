@@ -85,6 +85,7 @@ class DashboardPage:
             plan_id = random.randint(1, 4)
             random_package_locator = f"//button[contains(@onclick , 'plan_id={plan_id}')]"
             upgrade_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, random_package_locator)))
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", upgrade_button)
             upgrade_button.click()
 
             time.sleep(1)  # allow modal/plan details to appear

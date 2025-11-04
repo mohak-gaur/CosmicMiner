@@ -12,7 +12,7 @@ class RegisterPage:
     def register(self, user, referral_code):
         self.wait.until(EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Enter your Name']"))).send_keys(user["Name"])
         self.driver.find_element(By.ID, "email").send_keys(user["Email"])
-        self.driver.find_element(By.XPATH, "//input[@placeholder='Enter your UserName']").send_keys(user["Name"])
+        # self.driver.find_element(By.XPATH, "//input[@placeholder='Enter your UserName']").send_keys(user["Name"])
         self.driver.find_element(By.ID, "password").send_keys(user["Password"])
         self.driver.find_element(By.ID, "confirm_password").send_keys(user["ConfirmPassword"])
         self.driver.find_element(By.ID, "referral_id").send_keys(referral_code)
