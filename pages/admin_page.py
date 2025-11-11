@@ -17,7 +17,7 @@ class AdminPage:
         self.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href = 'planwiseuser.php']"))).click()
         time.sleep(1)
         self.driver.find_element(By.XPATH, "(//button[@class='action-btn btn-edit'])[1]").click()
-        self.wait.until(EC.presence_of_element_located((By.NAME, "status"))).click()
+        self.wait.until(EC.element_to_be_clickable((By.NAME, "status"))).click()
         self.wait.until(EC.element_to_be_clickable((By.XPATH, "//option[@value='completed']"))).click()
         logging.info("Payment status has been updated to 'Completed'")
         # self.driver.find_element(By.XPATH, "//option[@value='completed']").click()

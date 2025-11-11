@@ -2,7 +2,7 @@ import logging
 from utils.logger import setup_logging
 from core.excel_utils import read_users, write_results
 from workflows.hierarchy_builder import build_hierarchy
-from core.referral_logic import build_referral_map_from_results, calculate_metrics
+from core.referral_logic_1 import build_referral_map_from_results, calculate_metrics
 import config
 import pandas as pd
 

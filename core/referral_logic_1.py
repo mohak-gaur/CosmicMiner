@@ -1,8 +1,6 @@
 from collections import deque
 from copy import deepcopy
-from datetime import datetime
 from config import PLAN_AMOUNT_MAP
-
 
 def determine_rank(user, direct_miners, referral_map):
     if user['DirectMiners'] < 15 or user['IndirectMiners'] < 250:
@@ -21,7 +19,6 @@ def determine_rank(user, direct_miners, referral_map):
     else:
         return 'Basic'
 
-
 def valid_split(business_shares):
     if len(business_shares) < 3:
         return False
@@ -29,81 +26,43 @@ def valid_split(business_shares):
     t1, t2, t3 = [round(x, 2) for x in top_three]
     return t1 == 40.0 and t2 == 30.0 and t3 == 30.0
 
-
-def auto_generate_split(direct_miners, total_business):
-    """
-    Assign 40%-30%-30% business to first 3 miners if needed.
-    Remaining miners get 0 business.
-    """
-    if len(direct_miners) < 3 or total_business == 0:
-        return
-    split_values = [0.4, 0.3, 0.3]
-    for i, child in enumerate(direct_miners[:3]):
-        child['TotalBusiness'] = total_business * split_values[i]
-    for child in direct_miners[3:]:
-        child['TotalBusiness'] = 0
-
-
 def determine_star_rank(user, direct_miners, referral_map):
-    # Skip recalculation if rank is locked
-    if user.get('RankLocked', False):
-        return user['StarRank']
-
     # Applies only to paid users
     if not user.get('PlanID'):
         return 1
-
     total_business = user.get('TotalBusiness', 0)
-
-    # Must have min conditions
     if user['DirectMiners'] < 15 or user['IndirectMiners'] < 250 or total_business < 10000:
         return 1
-
-    # Auto assign 40-30-30 split to top 3 children
-    auto_generate_split(direct_miners, total_business)
-
-    # Recalculate split percentages
     shares = []
     for child in direct_miners:
         cu = referral_map.get(child['MyReferral'])
         if cu and cu['TotalBusiness'] > 0:
             share_percent = (cu['TotalBusiness'] / total_business) * 100
             shares.append(share_percent)
-
-    # Validate split
     if not valid_split(shares):
         return 1
-
-    # Determine star progression from children
     child_stars = [
         referral_map[child['MyReferral']]['StarRank']
         for child in direct_miners
         if referral_map.get(child['MyReferral']) and referral_map[child['MyReferral']]['StarRank']
     ]
-
     for star_level in range(7, 1, -1):
         required = star_level - 1
         if child_stars.count(required) >= 3:
-            user['RankLocked'] = True
-            user['RankLockedAt'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            return star_level
-
-    # Default promotion
-    user['RankLocked'] = True
-    user['RankLockedAt'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            if valid_split(shares):
+                return star_level
     return 2
-
 
 def calculate_metrics(referral_map, user_ref, visited=None):
     if visited is None:
         visited = set()
 
+    # Prevent infinite recursion
     if user_ref in visited:
         return 0, 0
     visited.add(user_ref)
 
     user = referral_map[user_ref]
-
     # Get direct miners for this user
     direct_miners = [
         child for child in referral_map.values()
@@ -116,6 +75,7 @@ def calculate_metrics(referral_map, user_ref, visited=None):
 
     # Include own plan amount
     if user.get('PlanID'):
+        # plan_id = int(user['PlanID'])
         total_business += PLAN_AMOUNT_MAP.get(user['PlanID'], 0)
 
     # Recursively calculate for children
@@ -137,6 +97,7 @@ def calculate_metrics(referral_map, user_ref, visited=None):
 
 
 def build_referral_map_from_results(results, start_referral):
+    # results: list of tuples (user, parent, new_ref, level, plan_id)
     referral_map = {}
     for (user, parent, new_ref, lvl, plan) in results:
         entry = deepcopy(user)
@@ -149,12 +110,10 @@ def build_referral_map_from_results(results, start_referral):
             'IndirectMiners': 0,
             'TotalBusiness': 0,
             'Rank': None,
-            'StarRank': 1,
-            'RankLocked': False,
-            'RankLockedAt': None
+            'StarRank': 1
         })
         referral_map[new_ref] = entry
-
+    # add root if missing
     if start_referral not in referral_map:
         referral_map[start_referral] = {
             'Name': 'Root',
@@ -167,8 +126,6 @@ def build_referral_map_from_results(results, start_referral):
             'IndirectMiners': 0,
             'TotalBusiness': 0,
             'Rank': None,
-            'StarRank': 1,
-            'RankLocked': False,
-            'RankLockedAt': None
+            'StarRank': 1
         }
     return referral_map
