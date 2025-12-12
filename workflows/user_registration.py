@@ -5,7 +5,7 @@ from pages.dashboard_page import DashboardPage
 from pages.admin_page import AdminPage
 import config, logging, time
 
-def register_and_upgrade(user, parent_ref, headless=False):
+def register_and_upgrade(user, parent_ref, user_index=None, headless=False):
     driver = get_driver(headless=False)
     wait = WebDriverWait(driver, 20)
     try:
@@ -15,7 +15,6 @@ def register_and_upgrade(user, parent_ref, headless=False):
 
         reg.open(config.REGISTER_URL)
         reg.register(user, parent_ref)
-        # small wait for post-registration flow
         time.sleep(2)
         dash.setup_pin_and_onboarding()
         dash.checkbox()
@@ -23,10 +22,14 @@ def register_and_upgrade(user, parent_ref, headless=False):
         dash.start_mining()
         new_ref = dash.extract_referral()
         dash.back_to_dashboard()
+
+        # pass user_index to apply 40-30-30 rule
         plan_id = dash.upgrade_plan()
-        # confirm on admin panel
+
         if plan_id:
             admin.confirm_latest_order()
+            time.sleep(0.5)
+
         logging.info(f"Registered {user.get('Email')} -> {new_ref} (plan={plan_id})")
         return new_ref, plan_id
     except Exception as e:

@@ -1,4 +1,3 @@
-# dashboard_page.py
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 import time, random, string, logging
@@ -7,13 +6,12 @@ import config
 class DashboardPage:
     def __init__(self, driver, wait):
         self.driver = driver
-        self.wait = wait
+        self.wait = wait   
 
     def setup_pin_and_onboarding(self):
         # create pin
-        for i in range(1, 5):
-            pin_box = self.wait.until(EC.presence_of_element_located(
-                (By.XPATH, f"//input[@oninput='moveToNext(this, {i})']")))
+        for i in range(1,5):
+            pin_box = self.wait.until(EC.presence_of_element_located((By.XPATH, f"//input[@oninput='moveToNext(this, {i})']")))
             self.driver.execute_script("arguments[0].removeAttribute('readonly');", pin_box)
             pin_box.send_keys('0')
             time.sleep(0.2)
@@ -21,29 +19,30 @@ class DashboardPage:
             self.driver.find_element(By.ID, "nextBtn").click()
         except Exception:
             pass
-
         # confirm pin
         try:
-            for i in range(1, 5):
-                pin_box = self.wait.until(EC.presence_of_element_located(
-                    (By.XPATH, f"//input[@oninput='moveToNextConfirm(this, {i})']")))
+            for i in range(1,5):
+                pin_box = self.wait.until(EC.presence_of_element_located((By.XPATH, f"//input[@oninput='moveToNextConfirm(this, {i})']")))
                 self.driver.execute_script("arguments[0].removeAttribute('readonly');", pin_box)
                 pin_box.send_keys('0')
                 time.sleep(0.2)
             self.driver.find_element(By.ID, "setPinBtn").click()
+            
             time.sleep(2)
         except Exception:
             pass
+        # close popups if exist
 
     def checkbox(self):
         try:
+            # Sometimes "don't show again" checkbox appears first
             dont_show = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input#dontShowAgain")))
             dont_show.click()
         except Exception:
             pass
 
     def close_popup(self):
-        try:
+        try:      
             xyz = self.wait.until(EC.element_to_be_clickable((By.ID, "closePopup")))
             xyz.click()
             time.sleep(0.5)
@@ -58,6 +57,7 @@ class DashboardPage:
             time.sleep(3)
         except Exception:
             logging.info("Error while starting mining")
+              
 
     def extract_referral(self):
         try:
@@ -67,7 +67,7 @@ class DashboardPage:
             return parse_qs(urlparse(val).query).get('ref', [None])[0]
         except Exception:
             return None
-
+        
     def back_to_dashboard(self):
         try:
             back_but = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='dashboard.php']")))
@@ -75,55 +75,62 @@ class DashboardPage:
         except Exception:
             pass
 
-    def upgrade_plan(self, user_index=None):
-        """
-        Upgrade using config.PLAN_MAP and config.plan_id.
-        Keeps user_index parameter optional (ignored) so older calls don't break.
-        Returns the set amount on success, or None on failure.
-        """
+    def upgrade_plan(self):
+        
         try:
-            plan_id = getattr(config, "plan_id", None)
-            if plan_id not in config.PLAN_MAP:
-                logging.warning(f"Invalid config.plan_id ({plan_id}) - falling back to 4 (Quantum).")
-                plan_id = 4
-
-            plan_info = config.PLAN_MAP[plan_id]
-            logging.info(f"Selected plan for upgrade: {plan_info['name']} (plan_id={plan_id})")
-
-            # Navigate to upgrade page
             upgrade_nav = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='upgrade_gpc.php']")))
             upgrade_nav.click()
-            time.sleep(1)
 
-            # Locate plan button using configured onclick fragment
-            fragment = plan_info.get("onclick_fragment", f"plan_id={plan_id}")
-            plan_button_locator = f"//button[contains(@onclick, '{fragment}')]"
-            upgrade_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, plan_button_locator)))
+        # choose a random plan id between 1 and 4
+            # plan_id = random.randint(1, 4)
+            # random_package_locator = f"//button[contains(@onclick , 'plan_id={plan_id}')]"
+            plan_id = 4
+            random_package_locator = f"//button[contains(@onclick , 'plan_id={plan_id}')]"
+            upgrade_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, random_package_locator)))
             self.driver.execute_script("arguments[0].scrollIntoView(true);", upgrade_button)
             upgrade_button.click()
-            time.sleep(1)
 
-            # Use default amount from config.PLAN_MAP (single source)
-            set_amount = plan_info.get("default_amount", 0)
+            time.sleep(1)  # allow modal/plan details to appear
+        # read plan amount text
+            plan_range = self.driver.find_element(By.XPATH, "//div[@class='plan-range']").text
+            logging.info(f"Selected plan range text: {plan_range}")
 
-            # Fill amount field
-            amt_input = self.wait.until(EC.presence_of_element_located((By.ID, "amount")))
-            amt_input.clear()
-            amt_input.send_keys(str(set_amount))
+            amount_lookup = {
+                '30.000 USDT': 80,
+                '101.000 USDT': 200,
+                '251.000 USDT': 800,
+                '1001.000 USDT': 4500
+            }
+            set_amount = ''
+            for key, val in amount_lookup.items():
+                if key in plan_range:
+                    set_amount = val
+                    break
 
-            # Pay now
+            if set_amount != '':
+                try:
+                    logging.info(f"Setting amount to {set_amount}")
+                    amt_input = self.wait.until(EC.presence_of_element_located((By.ID, "amount")))
+                    amt_input.clear()
+                    amt_input.send_keys(str(set_amount))
+                except Exception as e:
+                    logging.warning(f"Couldn't set the amount input: {e}")
+                # pass
+
+        # Click pay now
             self.wait.until(EC.element_to_be_clickable((By.ID, "pay-now-btn"))).click()
             time.sleep(1)
 
-            # Submit fake txn hash
-            txn_hash = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+        # generate random txn hash and submit
+            txn_hash = ''.join(random.choices(string.ascii_letters, k=8))
+            logging.info(f"Submitting fake transaction hash: {txn_hash}")
             self.wait.until(EC.presence_of_element_located((By.ID, "modal-txn-hash"))).send_keys(txn_hash)
             self.wait.until(EC.element_to_be_clickable((By.ID, "modal-submit"))).click()
+
+        # wait a little for modal to close / success message
             time.sleep(2)
-
-            logging.info(f"Plan upgraded to {plan_info['name']} with {set_amount} USDT (plan_id={plan_id}).")
-            return set_amount
-
+            logging.info("Plan upgrade flow completed (client-side) — awaiting admin confirmation.")
+            return plan_id
         except Exception as e:
-            logging.error(f"Error during upgrade_plan: {e}", exc_info=True)
-            return None
+            logging.error(f"Error during perform_plan_upgrade: {e}", exc_info=True)
+            # return False

@@ -1,7 +1,24 @@
-from collections import deque
+# business_calculator.py
 from copy import deepcopy
 from datetime import datetime
-from config import PLAN_AMOUNT_MAP
+import config
+
+# Use PLAN_MAP from config (single source of truth)
+PLAN_MAP = config.PLAN_MAP
+
+
+def get_plan_amount(plan_id):
+    """
+    Return plan amount for a given plan_id using config.PLAN_MAP only.
+    Returns 0 if plan_id not found or invalid.
+    """
+    try:
+        info = PLAN_MAP.get(plan_id)
+        if info and ("default_amount" in info):
+            return info["default_amount"]
+        return 0
+    except Exception:
+        return 0
 
 
 def determine_rank(user, direct_miners, referral_map):
@@ -55,7 +72,7 @@ def determine_star_rank(user, direct_miners, referral_map):
 
     total_business = user.get('TotalBusiness', 0)
 
-    # Must have min conditions
+    # Must have minimum conditions
     if user['DirectMiners'] < 15 or user['IndirectMiners'] < 250 or total_business < 10000:
         return 1
 
@@ -66,7 +83,7 @@ def determine_star_rank(user, direct_miners, referral_map):
     shares = []
     for child in direct_miners:
         cu = referral_map.get(child['MyReferral'])
-        if cu and cu['TotalBusiness'] > 0:
+        if cu and cu.get('TotalBusiness', 0) > 0:
             share_percent = (cu['TotalBusiness'] / total_business) * 100
             shares.append(share_percent)
 
@@ -95,6 +112,10 @@ def determine_star_rank(user, direct_miners, referral_map):
 
 
 def calculate_metrics(referral_map, user_ref, visited=None):
+    """
+    Recursively calculate DirectMiners, IndirectMiners, TotalBusiness.
+    Uses get_plan_amount() which reads from config.PLAN_MAP.
+    """
     if visited is None:
         visited = set()
 
@@ -114,9 +135,9 @@ def calculate_metrics(referral_map, user_ref, visited=None):
     indirect_miners = 0
     total_business = 0
 
-    # Include own plan amount
+    # Include own plan amount (use centralized helper)
     if user.get('PlanID'):
-        total_business += PLAN_AMOUNT_MAP.get(user['PlanID'], 0)
+        total_business += get_plan_amount(user['PlanID'])
 
     # Recursively calculate for children
     for child in direct_miners:
@@ -137,6 +158,10 @@ def calculate_metrics(referral_map, user_ref, visited=None):
 
 
 def build_referral_map_from_results(results, start_referral):
+    """
+    results: iterable of tuples (user_dict, parent_ref, new_ref, level, plan_id)
+    start_referral: the root referral string
+    """
     referral_map = {}
     for (user, parent, new_ref, lvl, plan) in results:
         entry = deepcopy(user)
@@ -155,6 +180,7 @@ def build_referral_map_from_results(results, start_referral):
         })
         referral_map[new_ref] = entry
 
+    # Ensure start_referral exists
     if start_referral not in referral_map:
         referral_map[start_referral] = {
             'Name': 'Root',
